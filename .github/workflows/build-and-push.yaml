@@ -24,6 +24,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Log into registry
         uses: docker/login-action@v3
         with:
@@ -31,13 +34,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: .
           push: true
           tags: ghcr.io/maciej-wilczynski/cosign-poc:latest
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -45,4 +51,5 @@ jobs:
         env:
           IMAGE: ghcr.io/maciej-wilczynski/cosign-poc:latest@${{ steps.build-and-push.outputs.digest }}
         run: |
-          cosign sign $IMAGE
+          echo Signing image $IMAGE
+          cosign sign --yes $IMAGE
